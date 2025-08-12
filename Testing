@@ -1,130 +1,36 @@
-local Players = game:GetService("Players")
+--// Services
 local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
--- Remove old
-if playerGui:FindFirstChild("TradeFreezerGUI") then
-	playerGui.TradeFreezerGUI:Destroy()
-end
+--// GUI Setup
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "TradeFreezer"
+gui.ResetOnSpawn = false
 
--- Helper for making UI elements
-local function new(class, props)
-	local obj = Instance.new(class)
-	for k, v in pairs(props) do
-		obj[k] = v
-	end
-	return obj
-end
+--// Main Frame
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 250, 0, 150)
+main.Position = UDim2.new(0.35, 0, 0.4, 0)
+main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = false -- We'll handle dragging manually
 
--- ScreenGui
-local gui = new("ScreenGui", {Name = "TradeFreezerGUI", ResetOnSpawn = false, Parent = playerGui})
+-- Title Bar
+local titleBar = Instance.new("TextLabel", main)
+titleBar.Size = UDim2.new(1, 0, 0, 25)
+titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+titleBar.Text = "Trade Freezer"
+titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleBar.Font = Enum.Font.GothamBold
+titleBar.TextSize = 14
 
--- Main Frame (moved to left side)
-local main = new("Frame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5), -- Left anchor
-	Position = UDim2.new(0, 20, 0.5, 0), -- 20px from left
-	Size = UDim2.new(0, 240, 0, 160),
-	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-	BorderSizePixel = 0
-})
-new("UICorner", {Parent = main, CornerRadius = UDim.new(0, 12)})
+-- Drag variables
+local dragging = false
+local dragStart, startPos
 
--- Title
-new("TextLabel", {
-	Parent = main,
-	Position = UDim2.new(0, 0, 0, 6),
-	Size = UDim2.new(1, 0, 0, 28),
-	BackgroundTransparency = 1,
-	Text = "Trade Freezer",
-	Font = Enum.Font.GothamBold,
-	TextSize = 18,
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	TextXAlignment = Enum.TextXAlignment.Left, -- Align left
-})
-
--- Content Frame
-local content = new("Frame", {
-	Parent = main,
-	Position = UDim2.new(0, 10, 0, 36),
-	Size = UDim2.new(1, -20, 1, -46),
-	BackgroundTransparency = 1
-})
-
--- Toggle creator (aligned left)
-local function createToggle(parent, labelText, yPos)
-	local row = new("Frame", {
-		Parent = parent,
-		Size = UDim2.new(1, 0, 0, 28),
-		Position = UDim2.new(0, 0, 0, yPos),
-		BackgroundTransparency = 1
-	})
-	local bg = new("Frame", {
-		Parent = row,
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-		BorderSizePixel = 0
-	})
-	new("UICorner", {Parent = bg, CornerRadius = UDim.new(0, 8)})
-
-	new("TextLabel", {
-		Parent = bg,
-		Position = UDim2.new(0, 8, 0, 0),
-		Size = UDim2.new(0.65, -8, 1, 0),
-		BackgroundTransparency = 1,
-		Text = labelText,
-		TextColor3 = Color3.fromRGB(230, 230, 230),
-		Font = Enum.Font.Gotham,
-		TextSize = 14,
-		TextXAlignment = Enum.TextXAlignment.Left
-	})
-
-	local toggleBg = new("Frame", {
-		Parent = bg,
-		Size = UDim2.new(0, 40, 0, 20),
-		Position = UDim2.new(1, -48, 0.5, -10),
-		BackgroundColor3 = Color3.fromRGB(80, 80, 80),
-		BorderSizePixel = 0
-	})
-	new("UICorner", {Parent = toggleBg, CornerRadius = UDim.new(1, 0)})
-
-	local knob = new("Frame", {
-		Parent = toggleBg,
-		Size = UDim2.new(0, 16, 0, 16),
-		Position = UDim2.new(0.55, 0, 0.5, -8),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-		BorderSizePixel = 0
-	})
-	new("UICorner", {Parent = knob, CornerRadius = UDim.new(1, 0)})
-
-	local state = false
-	new("TextButton", {
-		Parent = bg,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
-		Text = ""
-	}).MouseButton1Click:Connect(function()
-		state = not state
-		if state then
-			toggleBg.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-			knob.Position = UDim2.new(0.05, 0, 0.5, -8)
-		else
-			toggleBg.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-			knob.Position = UDim2.new(0.55, 0, 0.5, -8)
-		end
-	end)
-end
-
--- Create toggles
-createToggle(content, "Freeze Trade", 0)
-createToggle(content, "Auto Accept", 34)
-createToggle(content, "Auto Add Items", 68)
-
--- Smooth draggable
-local dragging, dragStart, startPos = false, nil, nil
-
-main.InputBegan:Connect(function(input)
+titleBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = true
 		dragStart = input.Position
@@ -132,19 +38,47 @@ main.InputBegan:Connect(function(input)
 	end
 end)
 
-main.InputChanged:Connect(function(input)
+titleBar.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
 		local delta = input.Position - dragStart
 		local newPos = UDim2.new(
 			startPos.X.Scale, startPos.X.Offset + delta.X,
 			startPos.Y.Scale, startPos.Y.Offset + delta.Y
 		)
-		main.Position = newPos
+		TweenService:Create(main, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Position = newPos}):Play()
 	end
 end)
 
-main.InputEnded:Connect(function(input)
+titleBar.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = false
 	end
 end)
+
+-- Function to create toggle
+local function createToggle(name, position)
+	local btn = Instance.new("TextButton", main)
+	btn.Size = UDim2.new(1, -10, 0, 25)
+	btn.Position = position
+	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	btn.Text = name
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 14
+	
+	local indicator = Instance.new("Frame", btn)
+	indicator.Size = UDim2.new(0, 5, 1, 0)
+	indicator.Position = UDim2.new(0, 0, 0, 0)
+	indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	indicator.Visible = false
+	
+	local state = false
+	btn.MouseButton1Click:Connect(function()
+		state = not state
+		indicator.Visible = state
+	end)
+end
+
+-- Example Toggles
+createToggle("Generate", UDim2.new(0, 5, 0, 35))
+createToggle("Option 2", UDim2.new(0, 5, 0, 65))
