@@ -1,84 +1,114 @@
---// Services
+--// Fake "Trade Freezer" GUI
 local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local Player = game.Players.LocalPlayer
 
---// GUI Setup
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "TradeFreezer"
-gui.ResetOnSpawn = false
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
 
---// Main Frame
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 250, 0, 150)
-main.Position = UDim2.new(0.35, 0, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = false -- We'll handle dragging manually
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
+MainFrame.Position = UDim2.new(0.35, 0, 0.35, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
 
 -- Title Bar
-local titleBar = Instance.new("TextLabel", main)
-titleBar.Size = UDim2.new(1, 0, 0, 25)
-titleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-titleBar.Text = "Trade Freezer"
-titleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleBar.Font = Enum.Font.GothamBold
-titleBar.TextSize = 14
+local TitleBar = Instance.new("TextLabel")
+TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.Text = "Trade Freezer"
+TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleBar.TextSize = 16
+TitleBar.Font = Enum.Font.SourceSansBold
+TitleBar.Parent = MainFrame
 
--- Drag variables
+-- Smooth Dragging
 local dragging = false
 local dragStart, startPos
 
-titleBar.InputBegan:Connect(function(input)
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	local newPos = UDim2.new(
+		startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y
+	)
+	TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+		Position = newPos
+	}):Play()
+end
+
+TitleBar.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = true
 		dragStart = input.Position
-		startPos = main.Position
+		startPos = MainFrame.Position
 	end
 end)
 
-titleBar.InputChanged:Connect(function(input)
+TitleBar.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
-		local delta = input.Position - dragStart
-		local newPos = UDim2.new(
-			startPos.X.Scale, startPos.X.Offset + delta.X,
-			startPos.Y.Scale, startPos.Y.Offset + delta.Y
-		)
-		TweenService:Create(main, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {Position = newPos}):Play()
+		updateDrag(input)
 	end
 end)
 
-titleBar.InputEnded:Connect(function(input)
+TitleBar.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = false
 	end
 end)
 
--- Function to create toggle
-local function createToggle(name, position)
-	local btn = Instance.new("TextButton", main)
-	btn.Size = UDim2.new(1, -10, 0, 25)
-	btn.Position = position
-	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	btn.Text = name
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	btn.Font = Enum.Font.Gotham
-	btn.TextSize = 14
-	
-	local indicator = Instance.new("Frame", btn)
-	indicator.Size = UDim2.new(0, 5, 1, 0)
-	indicator.Position = UDim2.new(0, 0, 0, 0)
-	indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	indicator.Visible = false
-	
-	local state = false
-	btn.MouseButton1Click:Connect(function()
-		state = not state
-		indicator.Visible = state
+-- Function to Create Toggles
+local function createToggle(name, positionY)
+	local ToggleFrame = Instance.new("Frame")
+	ToggleFrame.Size = UDim2.new(1, -10, 0, 30)
+	ToggleFrame.Position = UDim2.new(0, 5, 0, positionY)
+	ToggleFrame.BackgroundTransparency = 1
+	ToggleFrame.Parent = MainFrame
+
+	local ToggleLabel = Instance.new("TextLabel")
+	ToggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
+	ToggleLabel.BackgroundTransparency = 1
+	ToggleLabel.Text = name
+	ToggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	ToggleLabel.TextSize = 14
+	ToggleLabel.Font = Enum.Font.SourceSans
+	ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ToggleLabel.Parent = ToggleFrame
+
+	local ToggleButton = Instance.new("TextButton")
+	ToggleButton.Size = UDim2.new(0.25, 0, 0.6, 0)
+	ToggleButton.Position = UDim2.new(0.72, 0, 0.2, 0)
+	ToggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	ToggleButton.Text = ""
+	ToggleButton.AutoButtonColor = false
+	ToggleButton.Parent = ToggleFrame
+
+	local Indicator = Instance.new("Frame")
+	Indicator.Size = UDim2.new(0.4, 0, 1, 0)
+	Indicator.Position = UDim2.new(0, 0, 0, 0)
+	Indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	Indicator.Parent = ToggleButton
+
+	local on = false
+	ToggleButton.MouseButton1Click:Connect(function()
+		on = not on
+		if on then
+			TweenService:Create(Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+				Position = UDim2.new(0.6, 0, 0, 0)
+			}):Play()
+		else
+			TweenService:Create(Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+				Position = UDim2.new(0, 0, 0, 0)
+			}):Play()
+		end
 	end)
 end
 
--- Example Toggles
-createToggle("Generate", UDim2.new(0, 5, 0, 35))
-createToggle("Option 2", UDim2.new(0, 5, 0, 65))
+-- Example Toggles (match your screenshot)
+createToggle("Freeze Trades", 40)
+createToggle("Block Incoming", 75)
+createToggle("Auto Decline", 110)
+createToggle("Hide From List", 145)
