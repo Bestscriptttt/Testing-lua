@@ -1,71 +1,236 @@
-local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
-local screenGui = script.Parent
-local mainFrame = screenGui:WaitForChild("MainFrame")
-local titleBar = mainFrame:WaitForChild("TitleBar")
-local closeButton = titleBar:WaitForChild("CloseButton")
-local freezeButton = mainFrame:WaitForChild("ContentFrame"):WaitForChild("FreezeButton")
-local unfreezeButton = mainFrame:WaitForChild("ContentFrame"):WaitForChild("UnfreezeButton")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- RemoteEvent Reference
-local tradeFreezeEvent = ReplicatedStorage:WaitForChild("TradeFreezeEvent")
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TradeFreezerGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
 
-local dragging = false
-local dragStartPos = Vector2.new(0, 0)
-local frameStartPos = UDim2.new(0, 0, 0, 0)
+-- Main frame (card)
+local main = Instance.new("Frame")
+main.Name = "MainCard"
+main.Size = UDim2.new(0, 340, 0, 260)
+main.Position = UDim2.new(0.03, 0, 0.6, 0)
+main.AnchorPoint = Vector2.new(0, 0)
+main.BackgroundColor3 = Color3.fromRGB(18,18,18)
+main.BackgroundTransparency = 0
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Parent = screenGui
+main.Rotation = 0
+main.AnchorPoint = Vector2.new(0,0)
+main.AutomaticSize = Enum.AutomaticSize.None
+main.ZIndex = 2
+main.CanvasPosition = nil
 
-local function startDrag(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStartPos = UserInputService:GetMouseLocation()
-        frameStartPos = mainFrame.Position
-    end
+-- Rounded corner
+local corner = Instance.new("UICorner", main)
+corner.CornerRadius = UDim.new(0, 14)
+
+-- Title bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 60)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundTransparency = 1
+titleBar.Parent = main
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, -24, 1, 0)
+titleLabel.Position = UDim2.new(0, 12, 0, 8)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Trade Freezer"
+titleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+titleLabel.TextScaled = false
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 26
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+-- Add subtle header underline
+local headerLine = Instance.new("Frame")
+headerLine.Size = UDim2.new(1, -24, 0, 2)
+headerLine.Position = UDim2.new(0, 12, 0, 58)
+headerLine.BackgroundColor3 = Color3.fromRGB(36,36,36)
+headerLine.BorderSizePixel = 0
+headerLine.Parent = main
+
+-- Container for rows
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.Size = UDim2.new(1, 0, 1, -60)
+content.Position = UDim2.new(0, 0, 0, 60)
+content.BackgroundTransparency = 1
+content.Parent = main
+
+-- Helper to create a toggle row
+local function createToggleRow(parent, yOffset, labelText)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(0.94, 0, 0, 60)
+	row.Position = UDim2.new(0.03, 0, 0, yOffset)
+	row.BackgroundColor3 = Color3.fromRGB(48,48,48)
+	row.BorderSizePixel = 0
+	row.Parent = parent
+	
+	local rc = Instance.new("UICorner", row)
+	rc.CornerRadius = UDim.new(0, 10)
+	
+	local label = Instance.new("TextLabel", row)
+	label.Size = UDim2.new(0.75, -12, 1, 0)
+	label.Position = UDim2.new(0, 12, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = labelText
+	label.TextColor3 = Color3.fromRGB(230,230,230)
+	label.TextSize = 20
+	label.Font = Enum.Font.SourceSans
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	
+	-- Toggle background
+	local toggleBg = Instance.new("Frame", row)
+	toggleBg.Name = "ToggleBg"
+	toggleBg.Size = UDim2.new(0, 72, 0, 36)
+	toggleBg.Position = UDim2.new(1, -84, 0.5, -18)
+	toggleBg.BackgroundColor3 = Color3.fromRGB(66,66,66)
+	toggleBg.BorderSizePixel = 0
+	toggleBg.ClipsDescendants = true
+	local tcorner = Instance.new("UICorner", toggleBg)
+	tcorner.CornerRadius = UDim.new(0, 18)
+	
+	-- Knob
+	local knob = Instance.new("Frame", toggleBg)
+	knob.Name = "Knob"
+	knob.Size = UDim2.new(0, 32, 0, 32)
+	knob.Position = UDim2.new(1, -38, 0.5, -16)
+	knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	knob.BorderSizePixel = 0
+	local kcorner = Instance.new("UICorner", knob)
+	kcorner.CornerRadius = UDim.new(0, 16)
+	
+	-- BoolValue to store state
+	local state = Instance.new("BoolValue", row)
+	state.Name = "Enabled"
+	state.Value = false
+	
+	-- Toggle function with animation
+	local function setState(new)
+		state.Value = new
+		local targetPos
+		local targetColor
+		if new then
+			targetPos = UDim2.new(0, 8, 0.5, -16)
+			targetColor = Color3.fromRGB(108, 174, 255)
+		else
+			targetPos = UDim2.new(1, -38, 0.5, -16)
+			targetColor = Color3.fromRGB(255,255,255)
+		end
+		TweenService:Create(knob, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos}):Play()
+		TweenService:Create(toggleBg, TweenInfo.new(0.18), {BackgroundColor3 = new and Color3.fromRGB(40,40,40) or Color3.fromRGB(66,66,66)}):Play()
+		TweenService:Create(knob, TweenInfo.new(0.18), {BackgroundColor3 = targetColor}):Play()
+	end
+	
+	-- Input
+	local clickConnection
+	clickConnection = row.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			setState(not state.Value)
+		end
+	end)
+	
+	-- Also toggle when clicking toggleBg or knob
+	toggleBg.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			setState(not state.Value)
+		end
+	end)
+	knob.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			setState(not state.Value)
+		end
+	end)
+	
+	-- expose state for external use
+	return row, state, setState
 end
+
+-- Create three rows
+local r1, s1, set1 = createToggleRow(content, 12, "Freeze Trade")
+local r2, s2, set2 = createToggleRow(content, 84, "Auto Accept")
+local r3, s3, set3 = createToggleRow(content, 156, "Auto Add Items")
+
+-- Optional: start with toggles off (visual is off by default)
+set1(false)
+set2(false)
+set3(false)
+
+-- Make the whole main frame draggable (smooth)
+local dragging = false
+local dragInput, dragStart, startPos
 
 local function updateDrag(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local mousePos = UserInputService:GetMouseLocation()
-        local delta = mousePos - dragStartPos
-        
-        local newX = frameStartPos.X.Offset + delta.X
-        local newY = frameStartPos.Y.Offset + delta.Y
-        
-      
-        local max_X = UserInputService.ViewportSize.X - mainFrame.AbsoluteSize.X
-        local max_Y = UserInputService.ViewportSize.Y - mainFrame.AbsoluteSize.Y
-        
-        newX = math.clamp(newX, 0, max_X)
-        newY = math.clamp(newY, 0, max_Y)
-        
-        mainFrame.Position = UDim2.new(0, newX, 0, newY)
-    end
+	local delta = input.Position - dragStart
+	local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	TweenService:Create(main, TweenInfo.new(0.06, Enum.EasingStyle.Linear), {Position = newPos}):Play()
 end
 
-local function stopDrag(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end
-
-titleBar.InputBegan:Connect(startDrag)
-UserInputService.InputChanged:Connect(updateDrag)
-UserInputService.InputEnded:Connect(stopDrag)
-
-
-closeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+		-- capture that input's changed event
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
 end)
 
-
-freezeButton.MouseButton1Click:Connect(function()
-    print("LocalScript: Sending request to freeze trades...")
-    tradeFreezeEvent:FireServer("freeze")
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		updateDrag(input)
+	end
 end)
 
-
-unfreezeButton.MouseButton1Click:Connect(function()
-    print("LocalScript: Sending request to unfreeze trades...")
-    tradeFreezeEvent:FireServer("unfreeze")
+-- Also support touch dragging (mobile)
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
 end)
+
+-- Keep toggles usable and provide callbacks if you want to detect state changes
+s1.Changed:Connect(function()
+	-- Visual-only: put any debug or future hooks here
+	print("Freeze Trade:", s1.Value)
+end)
+s2.Changed:Connect(function()
+	print("Auto Accept:", s2.Value)
+end)
+s3.Changed:Connect(function()
+	print("Auto Add Items:", s3.Value)
+end)
+
+-- Optional: small show/hide toggle (press 'G' to toggle visibility)
+local visible = true
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.G then
+		visible = not visible
+		main.Visible = visible
+	end
+end)
+
