@@ -1,9 +1,3 @@
---[[
-    Fake GitHub Style GUI - "Trade Freezer"
-    For Roblox Grow A Garden
-    Fully Movable Anywhere + Smooth Drag
-]]
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
