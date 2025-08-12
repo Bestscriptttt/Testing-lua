@@ -1,40 +1,123 @@
-	-- Fake "Trade Freezer" GUI
--- Put this LocalScript in StarterGui
+--[[
+    Fake GitHub Style GUI - "Trade Freezer"
+    For Roblox Grow A Garden
+    Fully Movable Anywhere + Smooth Drag
+]]
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Parent = player:WaitForChild("PlayerGui")
-gui.ResetOnSpawn = false
+local playerGui = player:WaitForChild("PlayerGui")
 
--- Main Frame
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 140)
-frame.Position = UDim2.new(0.4, 0, 0.4, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.Parent = gui
+-- Remove old if exists
+if playerGui:FindFirstChild("TradeFreezerGUI") then
+    playerGui.TradeFreezerGUI:Destroy()
+end
 
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+-- Helper for quick UI creation
+local function new(class, props)
+    local obj = Instance.new(class)
+    for k, v in pairs(props) do
+        obj[k] = v
+    end
+    return obj
+end
 
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundTransparency = 1
-title.Text = "Trade Freezer"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 20
-title.Parent = frame
+-- ScreenGui
+local gui = new("ScreenGui", {Name = "TradeFreezerGUI", ResetOnSpawn = false, Parent = playerGui})
 
--- Function to make toggle buttons
-local function makeToggle(yPos, text)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.9, 0, 0, 30)
-    button.Position = UDim2.new(0.05, 0, 0, yPos)
-    button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    button.Text = text
-    button.TextColor3 = Color3.new(1, 1, 1)
+-- Main Frame (draggable anywhere)
+local main = new("Frame", {
+    Parent = gui,
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.new(0.5, 0, 0.5, 0),
+    Size = UDim2.new(0, 300, 0, 180),
+    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+    BorderSizePixel = 0
+})
+new("UICorner", {Parent = main, CornerRadius = UDim.new(0, 8)})
+
+-- Title Text
+new("TextLabel", {
+    Parent = main,
+    Size = UDim2.new(1, 0, 0, 32),
+    BackgroundTransparency = 1,
+    Text = "Trade Freezer",
+    Font = Enum.Font.GothamBold,
+    TextSize = 18,
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextXAlignment = Enum.TextXAlignment.Center
+})
+
+-- Example Button
+local button = new("TextButton", {
+    Parent = main,
+    Position = UDim2.new(0, 10, 0, 50),
+    Size = UDim2.new(0, 120, 0, 40),
+    BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+    BorderSizePixel = 0,
+    Text = "Generate",
+    Font = Enum.Font.Gotham,
+    TextSize = 16,
+    TextColor3 = Color3.fromRGB(255, 255, 255)
+})
+new("UICorner", {Parent = button, CornerRadius = UDim.new(0, 6)})
+
+-- Click effect
+local highlight = new("Frame", {
+    Parent = button,
+    Size = UDim2.new(1, 0, 1, 0),
+    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+    BackgroundTransparency = 0.8,
+    Visible = false
+})
+new("UICorner", {Parent = highlight, CornerRadius = UDim.new(0, 6)})
+
+button.MouseButton1Click:Connect(function()
+    highlight.Visible = true
+    task.wait(0.15)
+    highlight.Visible = false
+end)
+
+-- Smooth Draggable Anywhere
+local dragging, dragStart, startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    local newPos = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+    TweenService:Create(main, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+        Position = newPos
+    }):Play()
+end
+
+main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+main.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag(input)
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag(input)
+    end
+end)    button.TextColor3 = Color3.new(1, 1, 1)
     button.Font = Enum.Font.SourceSans
     button.TextSize = 18
     Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
