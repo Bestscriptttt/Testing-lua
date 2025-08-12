@@ -20,11 +20,11 @@ end
 -- ScreenGui
 local gui = new("ScreenGui", {Name = "TradeFreezerGUI", ResetOnSpawn = false, Parent = playerGui})
 
--- Main Frame (smaller size like screenshot)
+-- Main Frame (moved to left side)
 local main = new("Frame", {
 	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
+	AnchorPoint = Vector2.new(0, 0.5), -- Left anchor
+	Position = UDim2.new(0, 20, 0.5, 0), -- 20px from left
 	Size = UDim2.new(0, 240, 0, 160),
 	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
 	BorderSizePixel = 0
@@ -40,7 +40,8 @@ new("TextLabel", {
 	Text = "Trade Freezer",
 	Font = Enum.Font.GothamBold,
 	TextSize = 18,
-	TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	TextXAlignment = Enum.TextXAlignment.Left, -- Align left
 })
 
 -- Content Frame
@@ -51,7 +52,7 @@ local content = new("Frame", {
 	BackgroundTransparency = 1
 })
 
--- Toggle creator
+-- Toggle creator (aligned left)
 local function createToggle(parent, labelText, yPos)
 	local row = new("Frame", {
 		Parent = parent,
@@ -115,7 +116,7 @@ local function createToggle(parent, labelText, yPos)
 	end)
 end
 
--- Create toggles like screenshot
+-- Create toggles
 createToggle(content, "Freeze Trade", 0)
 createToggle(content, "Auto Accept", 34)
 createToggle(content, "Auto Add Items", 68)
