@@ -1,27 +1,27 @@
---// Fake "Trade Freezer" GUI
+--// Fake "Trade Freezer" GUI (Left Side Panel Style)
 local TweenService = game:GetService("TweenService")
 local Player = game.Players.LocalPlayer
 
--- Create GUI
+-- GUI Container
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
--- Main Frame
+-- Main Left Panel
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 200)
-MainFrame.Position = UDim2.new(0.35, 0, 0.35, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Size = UDim2.new(0, 200, 0, 160) -- narrow vertical style
+MainFrame.Position = UDim2.new(0.02, 0, 0.3, 0) -- LEFT SIDE
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
 -- Title Bar
 local TitleBar = Instance.new("TextLabel")
-TitleBar.Size = UDim2.new(1, 0, 0, 30)
-TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.Size = UDim2.new(1, 0, 0, 28)
+TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 TitleBar.Text = "Trade Freezer"
 TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
-TitleBar.TextSize = 16
+TitleBar.TextSize = 15
 TitleBar.Font = Enum.Font.SourceSansBold
 TitleBar.Parent = MainFrame
 
@@ -60,7 +60,7 @@ TitleBar.InputEnded:Connect(function(input)
 	end
 end)
 
--- Function to Create Toggles
+-- Function to Create Animated Toggle
 local function createToggle(name, positionY)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(1, -10, 0, 30)
@@ -107,8 +107,7 @@ local function createToggle(name, positionY)
 	end)
 end
 
--- Example Toggles (match your screenshot)
-createToggle("Freeze Trades", 40)
-createToggle("Block Incoming", 75)
-createToggle("Auto Decline", 110)
-createToggle("Hide From List", 145)
+-- Only the 3 toggles you want
+createToggle("Freeze Trade", 40)
+createToggle("Auto Accept", 75)
+createToggle("Auto Add Items", 110)
