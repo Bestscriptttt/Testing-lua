@@ -1,150 +1,149 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Remove old if exists
+-- Remove old
 if playerGui:FindFirstChild("TradeFreezerGUI") then
-    playerGui.TradeFreezerGUI:Destroy()
+	playerGui.TradeFreezerGUI:Destroy()
 end
 
--- Helper for quick UI creation
+-- Helper for making UI elements
 local function new(class, props)
-    local obj = Instance.new(class)
-    for k, v in pairs(props) do
-        obj[k] = v
-    end
-    return obj
+	local obj = Instance.new(class)
+	for k, v in pairs(props) do
+		obj[k] = v
+	end
+	return obj
 end
 
 -- ScreenGui
 local gui = new("ScreenGui", {Name = "TradeFreezerGUI", ResetOnSpawn = false, Parent = playerGui})
 
--- Main Frame (draggable anywhere)
+-- Main Frame (smaller size like screenshot)
 local main = new("Frame", {
-    Parent = gui,
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    Size = UDim2.new(0, 300, 0, 180),
-    BackgroundColor3 = Color3.fromRGB(30, 30, 30),
-    BorderSizePixel = 0
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Size = UDim2.new(0, 240, 0, 160),
+	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+	BorderSizePixel = 0
 })
-new("UICorner", {Parent = main, CornerRadius = UDim.new(0, 8)})
+new("UICorner", {Parent = main, CornerRadius = UDim.new(0, 12)})
 
--- Title Text
+-- Title
 new("TextLabel", {
-    Parent = main,
-    Size = UDim2.new(1, 0, 0, 32),
-    BackgroundTransparency = 1,
-    Text = "Trade Freezer",
-    Font = Enum.Font.GothamBold,
-    TextSize = 18,
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    TextXAlignment = Enum.TextXAlignment.Center
+	Parent = main,
+	Position = UDim2.new(0, 0, 0, 6),
+	Size = UDim2.new(1, 0, 0, 28),
+	BackgroundTransparency = 1,
+	Text = "Trade Freezer",
+	Font = Enum.Font.GothamBold,
+	TextSize = 18,
+	TextColor3 = Color3.fromRGB(255, 255, 255)
 })
 
--- Example Button
-local button = new("TextButton", {
-    Parent = main,
-    Position = UDim2.new(0, 10, 0, 50),
-    Size = UDim2.new(0, 120, 0, 40),
-    BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-    BorderSizePixel = 0,
-    Text = "Generate",
-    Font = Enum.Font.Gotham,
-    TextSize = 16,
-    TextColor3 = Color3.fromRGB(255, 255, 255)
+-- Content Frame
+local content = new("Frame", {
+	Parent = main,
+	Position = UDim2.new(0, 10, 0, 36),
+	Size = UDim2.new(1, -20, 1, -46),
+	BackgroundTransparency = 1
 })
-new("UICorner", {Parent = button, CornerRadius = UDim.new(0, 6)})
 
--- Click effect
-local highlight = new("Frame", {
-    Parent = button,
-    Size = UDim2.new(1, 0, 1, 0),
-    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-    BackgroundTransparency = 0.8,
-    Visible = false
-})
-new("UICorner", {Parent = highlight, CornerRadius = UDim.new(0, 6)})
+-- Toggle creator
+local function createToggle(parent, labelText, yPos)
+	local row = new("Frame", {
+		Parent = parent,
+		Size = UDim2.new(1, 0, 0, 28),
+		Position = UDim2.new(0, 0, 0, yPos),
+		BackgroundTransparency = 1
+	})
+	local bg = new("Frame", {
+		Parent = row,
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+		BorderSizePixel = 0
+	})
+	new("UICorner", {Parent = bg, CornerRadius = UDim.new(0, 8)})
 
-button.MouseButton1Click:Connect(function()
-    highlight.Visible = true
-    task.wait(0.15)
-    highlight.Visible = false
-end)
+	new("TextLabel", {
+		Parent = bg,
+		Position = UDim2.new(0, 8, 0, 0),
+		Size = UDim2.new(0.65, -8, 1, 0),
+		BackgroundTransparency = 1,
+		Text = labelText,
+		TextColor3 = Color3.fromRGB(230, 230, 230),
+		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left
+	})
 
--- Smooth Draggable Anywhere
-local dragging, dragStart, startPos
+	local toggleBg = new("Frame", {
+		Parent = bg,
+		Size = UDim2.new(0, 40, 0, 20),
+		Position = UDim2.new(1, -48, 0.5, -10),
+		BackgroundColor3 = Color3.fromRGB(80, 80, 80),
+		BorderSizePixel = 0
+	})
+	new("UICorner", {Parent = toggleBg, CornerRadius = UDim.new(1, 0)})
 
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    local newPos = UDim2.new(
-        startPos.X.Scale, startPos.X.Offset + delta.X,
-        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-    )
-    TweenService:Create(main, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-        Position = newPos
-    }):Play()
+	local knob = new("Frame", {
+		Parent = toggleBg,
+		Size = UDim2.new(0, 16, 0, 16),
+		Position = UDim2.new(0.55, 0, 0.5, -8),
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+		BorderSizePixel = 0
+	})
+	new("UICorner", {Parent = knob, CornerRadius = UDim.new(1, 0)})
+
+	local state = false
+	new("TextButton", {
+		Parent = bg,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		Text = ""
+	}).MouseButton1Click:Connect(function()
+		state = not state
+		if state then
+			toggleBg.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+			knob.Position = UDim2.new(0.05, 0, 0.5, -8)
+		else
+			toggleBg.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			knob.Position = UDim2.new(0.55, 0, 0.5, -8)
+		end
+	end)
 end
 
+-- Create toggles like screenshot
+createToggle(content, "Freeze Trade", 0)
+createToggle(content, "Auto Accept", 34)
+createToggle(content, "Auto Add Items", 68)
+
+-- Smooth draggable
+local dragging, dragStart, startPos = false, nil, nil
+
 main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = main.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+	end
 end)
 
 main.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        updateDrag(input)
-    end
+	if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+		local delta = input.Position - dragStart
+		local newPos = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+		main.Position = newPos
+	end
 end)
 
-UIS.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        updateDrag(input)
-    end
-end)    button.TextColor3 = Color3.new(1, 1, 1)
-    button.Font = Enum.Font.SourceSans
-    button.TextSize = 18
-    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
-    button.Parent = frame
-    
-    button.MouseButton1Click:Connect(function()
-        print(text .. " toggled (visual only)")
-    end)
-end
-
--- Create fake toggles
-makeToggle(40, "Freeze Trade")
-makeToggle(75, "Auto Accept")
-makeToggle(110, "Auto Add Items")
-
--- Make frame draggable
-local dragging, dragStart, startPos
-frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
+main.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
 end)
