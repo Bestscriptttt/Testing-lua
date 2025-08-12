@@ -1,0 +1,188 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Remove if already exists
+if playerGui:FindFirstChild("TradeFreezerGUI") then
+	playerGui.TradeFreezerGUI:Destroy()
+end
+
+-- Helper function to create UI objects quickly
+local function new(class, props)
+	local obj = Instance.new(class)
+	if props then
+		for k, v in pairs(props) do
+			if k == "Parent" then
+				obj.Parent = v
+			else
+				obj[k] = v
+			end
+		end
+	end
+	return obj
+end
+
+-- ScreenGui
+local gui = new("ScreenGui", {Parent = playerGui, Name = "TradeFreezerGUI", ResetOnSpawn = false})
+
+-- Main Frame
+local main = new("Frame", {
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Size = UDim2.new(0, 360, 0, 340),
+	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+	BorderSizePixel = 0,
+	Name = "MainFrame"
+})
+new("UICorner", {Parent = main, CornerRadius = UDim.new(0, 16)})
+
+-- Title
+local title = new("TextLabel", {
+	Parent = main,
+	Position = UDim2.new(0, 0, 0, 8),
+	Size = UDim2.new(1, 0, 0, 44),
+	BackgroundTransparency = 1,
+	Text = "Trade Freezer",
+	Font = Enum.Font.GothamBold,
+	TextSize = 26,
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Name = "Title"
+})
+
+-- Content Frame
+local content = new("Frame", {
+	Parent = main,
+	Position = UDim2.new(0, 12, 0, 64),
+	Size = UDim2.new(1, -24, 1, -76),
+	BackgroundTransparency = 1,
+	Name = "Content"
+})
+
+-- Create a toggle button row
+local function createToggle(parent, labelText, idx)
+	local row = new("Frame", {
+		Parent = parent,
+		Size = UDim2.new(1, 0, 0, 70),
+		Position = UDim2.new(0, 0, 0, (idx - 1) * 76),
+		BackgroundTransparency = 1
+	})
+	local bg = new("Frame", {
+		Parent = row,
+		Size = UDim2.new(1, 0, 0, 56),
+		Position = UDim2.new(0, 0, 0, 8),
+		BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+		BorderSizePixel = 0
+	})
+	new("UICorner", {Parent = bg, CornerRadius = UDim.new(0, 10)})
+
+	local label = new("TextLabel", {
+		Parent = bg,
+		Position = UDim2.new(0, 14, 0, 0),
+		Size = UDim2.new(0.7, -14, 1, 0),
+		BackgroundTransparency = 1,
+		Text = labelText,
+		TextColor3 = Color3.fromRGB(230, 230, 230),
+		Font = Enum.Font.Gotham,
+		TextSize = 20,
+		TextXAlignment = Enum.TextXAlignment.Left
+	})
+
+	local toggleBg = new("Frame", {
+		Parent = bg,
+		Size = UDim2.new(0, 92, 0, 38),
+		Position = UDim2.new(1, -106, 0.5, -19),
+		BackgroundColor3 = Color3.fromRGB(80, 80, 80),
+		BorderSizePixel = 0
+	})
+	new("UICorner", {Parent = toggleBg, CornerRadius = UDim.new(0, 18)})
+
+	local knob = new("Frame", {
+		Parent = toggleBg,
+		Size = UDim2.new(0, 34, 0, 34),
+		Position = UDim2.new(0.73, 0, 0.5, -17),
+		BackgroundColor3 = Color3.fromRGB(250, 250, 250),
+		BorderSizePixel = 0
+	})
+	new("UICorner", {Parent = knob, CornerRadius = UDim.new(0, 17)})
+
+	local state = false
+	local function setState(v)
+		state = v
+		if state then
+			toggleBg.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+			knob.Position = UDim2.new(0.08, 0, 0.5, -17)
+		else
+			toggleBg.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			knob.Position = UDim2.new(0.73, 0, 0.5, -17)
+		end
+		print(labelText .. " -> " .. tostring(state))
+	end
+
+	local click = new("TextButton", {
+		Parent = bg,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 1, 0),
+		Text = "",
+		AutoButtonColor = false
+	})
+	click.MouseButton1Click:Connect(function()
+		setState(not state)
+	end)
+
+	return {Set = setState, Get = function() return state end}
+end
+
+-- Create Toggles
+createToggle(content, "Freeze Trade", 1)
+createToggle(content, "Auto Accept", 2)
+createToggle(content, "Auto Add Items", 3)
+
+-- Footer
+new("TextLabel", {
+	Parent = main,
+	Position = UDim2.new(0.02, 0, 1, -36),
+	Size = UDim2.new(1, -8, 0, 28),
+	BackgroundTransparency = 1,
+	Text = "This is a fake GUI — visual only.",
+	TextColor3 = Color3.fromRGB(170, 170, 170),
+	Font = Enum.Font.Gotham,
+	TextSize = 16,
+	TextXAlignment = Enum.TextXAlignment.Left
+})
+
+-- Smooth draggable system
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+main.Active = true
+main.Draggable = false
+
+main.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+	end
+end)
+
+main.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+		local delta = input.Position - dragStart
+		local newPos = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+		TweenService:Create(main, TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+			Position = newPos
+		}):Play()
+	end
+end)
+
+main.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
