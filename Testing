@@ -1,4 +1,4 @@
---// Fake "Trade Freezer" GUI (Left Side Panel Style)
+--// Fake "Trade Freezer" GUI (Left Side Panel Style with Rounded Corners)
 local TweenService = game:GetService("TweenService")
 local Player = game.Players.LocalPlayer
 
@@ -15,6 +15,11 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
+-- Rounded corners for main frame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10) -- adjust to match screenshot
+MainCorner.Parent = MainFrame
+
 -- Title Bar
 local TitleBar = Instance.new("TextLabel")
 TitleBar.Size = UDim2.new(1, 0, 0, 28)
@@ -24,6 +29,11 @@ TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleBar.TextSize = 15
 TitleBar.Font = Enum.Font.SourceSansBold
 TitleBar.Parent = MainFrame
+
+-- Rounded corners for title bar
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.Parent = TitleBar
 
 -- Smooth Dragging
 local dragging = false
@@ -86,11 +96,20 @@ local function createToggle(name, positionY)
 	ToggleButton.AutoButtonColor = false
 	ToggleButton.Parent = ToggleFrame
 
+	-- Rounded toggle switch
+	local ToggleCorner = Instance.new("UICorner")
+	ToggleCorner.CornerRadius = UDim.new(0, 8)
+	ToggleCorner.Parent = ToggleButton
+
 	local Indicator = Instance.new("Frame")
 	Indicator.Size = UDim2.new(0.4, 0, 1, 0)
 	Indicator.Position = UDim2.new(0, 0, 0, 0)
 	Indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	Indicator.Parent = ToggleButton
+
+	local IndicatorCorner = Instance.new("UICorner")
+	IndicatorCorner.CornerRadius = UDim.new(1, 0)
+	IndicatorCorner.Parent = Indicator
 
 	local on = false
 	ToggleButton.MouseButton1Click:Connect(function()
