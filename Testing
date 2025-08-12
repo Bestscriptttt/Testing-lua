@@ -1,117 +1,71 @@
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
--- Remove old
-if playerGui:FindFirstChild("TradeFreezerGUI") then
-	playerGui.TradeFreezerGUI:Destroy()
+local screenGui = script.Parent
+local mainFrame = screenGui:WaitForChild("MainFrame")
+local titleBar = mainFrame:WaitForChild("TitleBar")
+local closeButton = titleBar:WaitForChild("CloseButton")
+local freezeButton = mainFrame:WaitForChild("ContentFrame"):WaitForChild("FreezeButton")
+local unfreezeButton = mainFrame:WaitForChild("ContentFrame"):WaitForChild("UnfreezeButton")
+
+-- RemoteEvent Reference
+local tradeFreezeEvent = ReplicatedStorage:WaitForChild("TradeFreezeEvent")
+
+local dragging = false
+local dragStartPos = Vector2.new(0, 0)
+local frameStartPos = UDim2.new(0, 0, 0, 0)
+
+local function startDrag(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStartPos = UserInputService:GetMouseLocation()
+        frameStartPos = mainFrame.Position
+    end
 end
-
--- Helper for creating UI elements
-local function new(class, props)
-	local obj = Instance.new(class)
-	for k, v in pairs(props) do
-		obj[k] = v
-	end
-	return obj
-end
-
--- GUI Container
-local gui = new("ScreenGui", {Name = "TradeFreezerGUI", ResetOnSpawn = false, Parent = playerGui})
-
--- Main Frame
-local main = new("Frame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.new(0.5, 0, 0.5, 0),
-	Size = UDim2.new(0, 260, 0, 150),
-	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-	BorderSizePixel = 0
-})
-new("UICorner", {Parent = main, CornerRadius = UDim.new(0, 12)})
-
--- Title Bar
-local titleBar = new("Frame", {
-	Parent = main,
-	Size = UDim2.new(1, 0, 0, 30),
-	BackgroundColor3 = Color3.fromRGB(30, 30, 30),
-	BorderSizePixel = 0
-})
-new("UICorner", {Parent = titleBar, CornerRadius = UDim.new(0, 12)})
-
-new("TextLabel", {
-	Parent = titleBar,
-	Size = UDim2.new(1, 0, 1, 0),
-	BackgroundTransparency = 1,
-	Text = "Trade Freezer",
-	Font = Enum.Font.GothamBold,
-	TextSize = 18,
-	TextColor3 = Color3.fromRGB(255, 255, 255)
-})
-
--- Button on the left
-local leftButton = new("TextButton", {
-	Parent = main,
-	Position = UDim2.new(0, 10, 0, 50),
-	Size = UDim2.new(0, 100, 0, 40),
-	Text = "Generate",
-	Font = Enum.Font.Gotham,
-	TextSize = 16,
-	TextColor3 = Color3.fromRGB(255, 255, 255),
-	BackgroundColor3 = Color3.fromRGB(60, 60, 60),
-	BorderSizePixel = 0
-})
-new("UICorner", {Parent = leftButton, CornerRadius = UDim.new(0, 8)})
-
--- White highlight effect (thin)
-local highlight = new("Frame", {
-	Parent = leftButton,
-	Size = UDim2.new(1, 0, 1, 0),
-	BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-	BackgroundTransparency = 0.8,
-	Visible = false
-})
-new("UICorner", {Parent = highlight, CornerRadius = UDim.new(0, 8)})
-
-leftButton.MouseButton1Click:Connect(function()
-	highlight.Visible = true
-	task.wait(0.15)
-	highlight.Visible = false
-end)
-
--- Draggable code (only from title bar)
-local UIS = game:GetService("UserInputService")
-local dragging, dragInput, dragStart, startPos
 
 local function updateDrag(input)
-	local delta = input.Position - dragStart
-	main.Position = UDim2.new(
-		startPos.X.Scale, startPos.X.Offset + delta.X,
-		startPos.Y.Scale, startPos.Y.Offset + delta.Y
-	)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local mousePos = UserInputService:GetMouseLocation()
+        local delta = mousePos - dragStartPos
+        
+        local newX = frameStartPos.X.Offset + delta.X
+        local newY = frameStartPos.Y.Offset + delta.Y
+        
+      
+        local max_X = UserInputService.ViewportSize.X - mainFrame.AbsoluteSize.X
+        local max_Y = UserInputService.ViewportSize.Y - mainFrame.AbsoluteSize.Y
+        
+        newX = math.clamp(newX, 0, max_X)
+        newY = math.clamp(newY, 0, max_Y)
+        
+        mainFrame.Position = UDim2.new(0, newX, 0, newY)
+    end
 end
 
-titleBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = main.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
+local function stopDrag(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end
+
+titleBar.InputBegan:Connect(startDrag)
+UserInputService.InputChanged:Connect(updateDrag)
+UserInputService.InputEnded:Connect(stopDrag)
+
+
+closeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
 end)
 
-titleBar.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
+
+freezeButton.MouseButton1Click:Connect(function()
+    print("LocalScript: Sending request to freeze trades...")
+    tradeFreezeEvent:FireServer("freeze")
 end)
 
-UIS.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		updateDrag(input)
-	end
+
+unfreezeButton.MouseButton1Click:Connect(function()
+    print("LocalScript: Sending request to unfreeze trades...")
+    tradeFreezeEvent:FireServer("unfreeze")
 end)
